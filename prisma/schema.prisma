@@ -1,0 +1,62 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id                 String   @id @default(cuid())
+  name               String
+  email              String   @unique
+  phone              String?
+  dailyCaloriesLimit Int      @default(2000)
+  budgetInPaise      Int?
+  goal               String   @default("Maintenance")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  logs               LogEntry[]
+}
+
+model Kitchen {
+  id           String      @id @default(cuid())
+  name         String
+  rating       Float
+  deliveryTime String
+  tags         String      // Comma separated
+  image        String
+  menuItems    MenuItem[]
+}
+
+model MenuItem {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  category    String
+  priceInPaise Int
+  calories    Int
+  protein     Int
+  carbs       Int
+  fat         Int
+  type        String
+  image       String
+  isPopular   Boolean  @default(false)
+  kitchenId   String
+  kitchen     Kitchen  @relation(fields: [kitchenId], references: [id])
+}
+
+model LogEntry {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  itemName    String
+  calories    Int
+  priceInPaise Int
+  loggedAt    DateTime @default(now())
+}
