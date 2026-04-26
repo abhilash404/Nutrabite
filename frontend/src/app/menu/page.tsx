@@ -1,5 +1,6 @@
 'use client';
-import { mockFoodItems, FoodCategory } from "@/lib/mockData";
+import { useState, useEffect } from "react";
+import { FoodCategory } from "@/lib/mockData";
 import { useCart } from "@/lib/CartContext";
 import Image from "next/image";
 import Link from "next/link";
@@ -10,7 +11,24 @@ export default function MenuPage() {
   const { addToCart } = useCart();
   const categories: FoodCategory[] = ['Breakfast', 'Lunch', 'Dinner', 'Snacks'];
 
-  const aiRecommendation = mockFoodItems[2]; // Mocked AI pick
+  const [foodItems, setFoodItems] = useState<any[]>([]);
+  const [aiRecommendation, setAiRecommendation] = useState<any>(null);
+
+  useEffect(() => {
+    fetch('http://127.0.0.1:5000/api/menu')
+      .then(res => res.json())
+      .then(data => {
+        setFoodItems(data);
+        if (data.length > 2) {
+          setAiRecommendation(data[2]);
+        }
+      })
+      .catch(err => console.error(err));
+  }, []);
+
+  if (!foodItems.length || !aiRecommendation) {
+    return <div className="container mx-auto px-4 py-12 text-center">Loading menu...</div>;
+  }
 
   return (
     <div className="container mx-auto px-4 py-12">
@@ -58,7 +76,7 @@ export default function MenuPage() {
       </div>
 
       {categories.map((category) => {
-        const items = mockFoodItems.filter(item => item.category === category);
+        const items = foodItems.filter(item => item.category === category);
         if (items.length === 0) return null;
 
         return (

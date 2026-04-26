@@ -1,7 +1,14 @@
 import Link from 'next/link';
-import { mockRestaurants } from '@/lib/mockData';
 
-export default function KitchensPage() {
+export default async function KitchensPage() {
+  let restaurants: any[] = [];
+  try {
+    const res = await fetch('http://127.0.0.1:5000/api/kitchens', { cache: 'no-store' });
+    if (res.ok) restaurants = await res.json();
+  } catch (e) {
+    console.error("Failed to fetch kitchens", e);
+  }
+
   return (
     <div className="container mx-auto px-4 py-12 max-w-7xl">
       <div className="mb-10 text-center md:text-left">
@@ -12,7 +19,7 @@ export default function KitchensPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-        {mockRestaurants.map((restaurant) => (
+        {restaurants.map((restaurant) => (
           <div 
             key={restaurant.id} 
             className="group bg-white dark:bg-neutral-900 rounded-3xl border border-neutral-100 dark:border-neutral-800 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col"

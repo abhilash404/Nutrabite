@@ -1,7 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { mockFoodItems } from '@/lib/mockData';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 
 export default function TrackerPage() {
@@ -32,7 +31,7 @@ export default function TrackerPage() {
     setParsedDraft(null);
 
     try {
-      const res = await fetch('/api/ai-parse-food', {
+      const res = await fetch('http://127.0.0.1:5000/api/ai-parse-food', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: aiInput })
@@ -93,7 +92,7 @@ export default function TrackerPage() {
   const handleGetRecommendation = async () => {
     setIsAiLoading(true);
     try {
-      const response = await fetch('/api/ai-recommend', {
+      const response = await fetch('http://127.0.0.1:5000/api/ai-recommend', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -147,7 +146,7 @@ export default function TrackerPage() {
       date: "Oct 12, 2023",
       status: "Delivered",
       total: 1045, // INR
-      items: [mockFoodItems[0], mockFoodItems[5]]
+      items: [] // Empty mock for now since items were from mockData array correctly
     }
   ];
 

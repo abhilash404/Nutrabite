@@ -1,12 +1,18 @@
 'use client';
 
-import { useState } from 'react';
-import { mockFoodItems } from '@/lib/mockData';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<'menu' | 'orders'>('menu');
-  const [items, setItems] = useState(mockFoodItems);
+  const [items, setItems] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch('http://127.0.0.1:5000/api/menu')
+      .then(res => res.json())
+      .then(data => setItems(data))
+      .catch(err => console.error(err));
+  }, []);
 
   const deleteItem = (id: string) => {
     if (confirm('Are you sure you want to delete this item?')) {
