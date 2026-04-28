@@ -1,7 +1,9 @@
 import os
 from app import create_app
 from models import db
-from models.models import User, Kitchen, MenuItem, LogEntry
+from models.models import User, Kitchen, MenuItem, LogEntry, UserDailyStats, Cart, CartItem, Order, OrderItem
+import uuid
+from datetime import datetime, timedelta, date
 import uuid
 
 app = create_app()
@@ -12,9 +14,14 @@ def generate_cuid():
 with app.app_context():
     db.create_all()
     # Clear existing data first
+    CartItem.query.delete()
+    Cart.query.delete()
+    OrderItem.query.delete()
+    Order.query.delete()
     MenuItem.query.delete()
     Kitchen.query.delete()
     LogEntry.query.delete()
+    UserDailyStats.query.delete()
     User.query.delete()
 
     # Create dummy user
@@ -37,6 +44,33 @@ with app.app_context():
     m7 = MenuItem(id="f7", name="Protein Bliss Bites", description="Energy balls made from dates, nuts, and whey isolates.", category="Snacks", priceInPaise=15000, calories=220, protein=12, carbs=25, fat=9, type="Veg", image="https://images.unsplash.com/photo-1528751014936-863e6e8a3ee2?w=800&q=80", isPopular=False, kitchenId="r2")
 
     db.session.add_all([m1, m2, m3, m4, m5, m6, m7])
+    
+    # Generate 7 days of mock tracking data for user_1
+    today = date.today()
+    now = datetime.utcnow()
+    
+    stats_to_add = []
+    logs_to_add = []
+    
+    for i in range(7):
+        day = today - timedelta(days=6 - i)
+        # Weight decreases slightly, steps and workout fluctuate
+        weight = 80.5 - (i * 0.1) 
+        steps = 6000 + (i * 500) + (1000 if i%2==0 else -500)
+        workout = 30 + (i * 5)
+        
+        stat = UserDailyStats(userId="user_1", date=day, weight=weight, steps=steps, workoutMins=workout)
+        stats_to_add.append(stat)
+        
+        # Add 3 meals per day
+        log_time = now - timedelta(days=6 - i)
+        l1 = LogEntry(userId="user_1", itemName="Morning Oats", calories=350, protein=15, carbs=45, fat=10, priceInPaise=15000, loggedAt=log_time.replace(hour=8))
+        l2 = LogEntry(userId="user_1", itemName="Chicken Salad", calories=450, protein=40, carbs=20, fat=15, priceInPaise=35000, loggedAt=log_time.replace(hour=13))
+        l3 = LogEntry(userId="user_1", itemName="Dinner Soup", calories=300, protein=10, carbs=40, fat=5, priceInPaise=20000, loggedAt=log_time.replace(hour=19))
+        logs_to_add.extend([l1, l2, l3])
+        
+    db.session.add_all(stats_to_add)
+    db.session.add_all(logs_to_add)
     
     db.session.commit()
     print("Database seeded completely!")

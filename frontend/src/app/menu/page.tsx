@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { FoodCategory } from "@/lib/mockData";
 import { useCart } from "@/lib/CartContext";
+import { useAuth } from "@/lib/AuthContext";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -9,6 +10,7 @@ import { Sparkles, ShoppingBag, Info, Search } from "lucide-react";
 
 export default function MenuPage() {
   const { addToCart } = useCart();
+  const { user } = useAuth();
   const categories: FoodCategory[] = ['Breakfast', 'Lunch', 'Dinner', 'Snacks'];
 
   const [foodItems, setFoodItems] = useState<any[]>([]);
@@ -47,13 +49,19 @@ export default function MenuPage() {
             </div>
             <h2 className="text-4xl font-black mb-4 leading-tight">Based on your goals, we suggest the {aiRecommendation.name}</h2>
             <p className="text-neutral-400 mb-8 max-w-lg">This meal is packed with {aiRecommendation.protein}g of protein and fits perfectly into your weight loss plan while keeping you energized.</p>
-            <button 
-              onClick={() => addToCart(aiRecommendation)}
-              className="px-8 py-4 bg-green-500 hover:bg-green-600 rounded-2xl font-bold flex items-center gap-2 transition-all shadow-lg shadow-green-500/20 active:scale-95"
-            >
-              <ShoppingBag className="w-5 h-5" />
-              Add to Cart - ₹{aiRecommendation.price}
-            </button>
+            {user ? (
+              <button 
+                onClick={() => addToCart(aiRecommendation)}
+                className="px-8 py-4 bg-green-500 hover:bg-green-600 rounded-2xl font-bold flex items-center gap-2 transition-all shadow-lg shadow-green-500/20 active:scale-95"
+              >
+                <ShoppingBag className="w-5 h-5" />
+                Add to Cart - ₹{aiRecommendation.price}
+              </button>
+            ) : (
+              <Link href="/signin" className="px-8 py-4 bg-neutral-800 hover:bg-neutral-700 rounded-2xl font-bold inline-flex items-center gap-2 transition-all">
+                Sign in to Order
+              </Link>
+            )}
           </div>
           <div className="relative w-full md:w-72 h-72 rounded-[30px] overflow-hidden border-4 border-white/5 shadow-2xl">
             <Image src={aiRecommendation.image} alt="AI Pick" fill className="object-cover" />
@@ -151,12 +159,14 @@ export default function MenuPage() {
                       </div>
                     </div>
                     
-                    <button 
-                      onClick={() => addToCart(item)}
-                      className="w-full py-2.5 bg-neutral-900 hover:bg-green-600 text-white font-medium rounded-xl transition-colors mt-auto flex items-center justify-center gap-2"
-                    >
-                      Add to Cart
-                    </button>
+                    {user && (
+                      <button 
+                        onClick={() => addToCart(item)}
+                        className="w-full py-2.5 bg-neutral-900 hover:bg-green-600 text-white font-medium rounded-xl transition-colors mt-auto flex items-center justify-center gap-2"
+                      >
+                        Add to Cart
+                      </button>
+                    )}
                   </div>
                 </motion.div>
               ))}

@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function TrackerPage() {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'orders' | 'nutrition'>('nutrition');
 
   // Interactive Calorie Tracker State
@@ -140,15 +142,20 @@ export default function TrackerPage() {
   const caloriesRemaining = targetCalories - consumedCalories;
   const progressPercentage = Math.min((consumedCalories / targetCalories) * 100, 100);
 
-  const orders = [
-    {
-      id: "ORD-7281",
-      date: "Oct 12, 2023",
-      status: "Delivered",
-      total: 1045, // INR
-      items: [] // Empty mock for now since items were from mockData array correctly
+  const [orders, setOrders] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (user?.id) {
+      fetch(`http://127.0.0.1:5000/api/checkout/${user.id}/orders`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setOrders(data.orders);
+          }
+        })
+        .catch(err => console.error(err));
     }
-  ];
+  }, [user]);
 
   return (
     <div className="container mx-auto px-4 py-12 max-w-6xl">
@@ -468,11 +475,28 @@ export default function TrackerPage() {
                <div className="p-6 flex justify-between items-center bg-neutral-50 dark:bg-neutral-950/50">
                  <div>
                    <p className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-1">Order ID</p>
-                   <p className="text-lg font-bold text-neutral-900 dark:text-neutral-100">{order.id}</p>
+                   <p className="text-lg font-bold text-neutral-900 dark:text-neutral-100">#{order.id.slice(-6).toUpperCase()}</p>
+                 </div>
+                 <div className="text-right">
+                   <p className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-1">Date</p>
+                   <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{order.date}</p>
                  </div>
                </div>
                <div className="p-6">
-                 Total: ₹{order.total}
+                 <div className="flex justify-between items-start mb-4">
+                   <div className="text-sm text-neutral-600 dark:text-neutral-400 max-w-sm">
+                     {order.items}
+                   </div>
+                   <div className="text-right">
+                     <span className={`px-3 py-1 rounded-full text-xs font-bold ${order.status === 'Paid' ? 'bg-green-100 text-green-700' : 'bg-neutral-100 text-neutral-700'}`}>
+                       {order.status}
+                     </span>
+                   </div>
+                 </div>
+                 <div className="border-t border-neutral-100 dark:border-neutral-800 pt-4 flex justify-between items-center">
+                   <span className="font-bold text-neutral-500">Total Amount</span>
+                   <span className="font-black text-lg">₹{order.total.toFixed(2)}</span>
+                 </div>
                </div>
              </div>
            ))}

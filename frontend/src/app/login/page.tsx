@@ -5,50 +5,44 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
 import Link from 'next/link';
 
-export default function RegisterPage() {
+export default function LoginPage() {
   const router = useRouter();
-  const { register } = useAuth();
-  const [error, setError] = useState('');
+  const { login } = useAuth();
   
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-  });
+  const [email, setEmail] = useState('');
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     
-    const success = await register({
-      name: formData.name,
-      email: formData.email,
-      phone: formData.phone,
-    });
-    if (success) router.push('/profile');
-    else setError('Failed to register. Email might be in use.');
+    const success = await login(email);
+    if (success) {
+      router.push('/profile');
+    } else {
+      setError('Failed to login. Please register first or check your email.');
+    }
   };
 
-  const handleGoogleRegister = async () => {
-    const success = await register({
-      name: 'Google User',
-      email: 'user@gmail.com',
-      phone: '123-456-7890',
-    });
-    if (success) router.push('/profile');
-    else setError('Google Account already registered. Please Login.');
+  const handleGoogleSignIn = async () => {
+    const success = await login('user@gmail.com');
+    if (!success) {
+      setError('Google Account not found. Please register.');
+    } else {
+      router.push('/profile');
+    }
   };
 
   return (
     <div className="flex min-h-[calc(100vh-64px)] items-center justify-center p-4">
       <div className="w-full max-w-md bg-white dark:bg-neutral-900 rounded-3xl border border-neutral-100 dark:border-neutral-800 shadow-xl p-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-extrabold text-neutral-900 dark:text-neutral-100 tracking-tight">Create Account</h1>
-          <p className="text-neutral-500 dark:text-neutral-400 mt-2">Join Nutrabite for personalized health</p>
+          <h1 className="text-3xl font-extrabold text-neutral-900 dark:text-neutral-100 tracking-tight">Welcome Back</h1>
+          <p className="text-neutral-500 dark:text-neutral-400 mt-2">Sign in to your Nutrabite account</p>
         </div>
 
         <button 
-          onClick={handleGoogleRegister}
+          onClick={handleGoogleSignIn}
           className="w-full mb-6 py-3.5 px-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:bg-neutral-50 dark:bg-neutral-950 hover:shadow-sm transition-all flex items-center justify-center gap-3 font-bold text-neutral-700 dark:text-neutral-300"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -57,7 +51,7 @@ export default function RegisterPage() {
             <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
             <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
           </svg>
-          Register with Google
+          Continue with Google
         </button>
 
         <div className="relative mb-6">
@@ -65,7 +59,7 @@ export default function RegisterPage() {
             <div className="w-full border-t border-neutral-200 dark:border-neutral-700"></div>
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-3 bg-white dark:bg-neutral-900 text-neutral-400 font-medium">Or register with email</span>
+            <span className="px-3 bg-white dark:bg-neutral-900 text-neutral-400 font-medium">Or log in with email</span>
           </div>
         </div>
 
@@ -73,38 +67,14 @@ export default function RegisterPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Full Name</label>
-            <input 
-              type="text" 
-              required
-              value={formData.name}
-              onChange={(e) => setFormData({...formData, name: e.target.value})}
-              className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all font-medium bg-transparent dark:text-white"
-              placeholder="John Doe"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Email Address</label>
+            <label className="text-sm font-bold text-neutral-700 ml-1 dark:text-neutral-300">Email Address</label>
             <input 
               type="email" 
               required
-              value={formData.email}
-              onChange={(e) => setFormData({...formData, email: e.target.value})}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all font-medium bg-transparent dark:text-white"
               placeholder="john@example.com"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Phone Number</label>
-            <input 
-              type="tel" 
-              required
-              value={formData.phone}
-              onChange={(e) => setFormData({...formData, phone: e.target.value})}
-              className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all font-medium bg-transparent dark:text-white"
-              placeholder="+1 234 567 8900"
             />
           </div>
 
@@ -112,12 +82,16 @@ export default function RegisterPage() {
             type="submit" 
             className="w-full py-4 bg-neutral-900 dark:bg-green-600 text-white font-bold rounded-2xl hover:bg-neutral-800 dark:hover:bg-green-500 transition-all shadow-xl mt-6"
           >
-            Create Account
+            Sign In
           </button>
         </form>
 
         <p className="text-center text-neutral-500 dark:text-neutral-400 text-sm font-medium mt-6">
-          Already have an account? <Link href="/login" className="text-green-600 hover:underline">Sign In</Link>
+          Need an account? <Link href="/signin" className="text-green-600 hover:underline">Register</Link>
+        </p>
+
+        <p className="text-center text-neutral-500 dark:text-neutral-400 text-sm font-medium mt-8">
+          By signing in, you agree to our <Link href="#" className="text-green-600 hover:underline">Terms</Link>.
         </p>
       </div>
     </div>

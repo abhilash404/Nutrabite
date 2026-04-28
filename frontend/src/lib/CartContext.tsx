@@ -1,18 +1,27 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { FoodItem } from './mockData';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { useAuth } from './AuthContext';
 
-interface CartItem extends FoodItem {
+export interface CartItem {
+  id: string;
+  name: string;
+  price: number;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  image: string;
   quantity: number;
 }
 
 interface CartContextType {
   items: CartItem[];
-  addToCart: (item: FoodItem) => void;
+  addToCart: (item: any) => void;
   removeFromCart: (itemId: string) => void;
   updateQuantity: (itemId: string, quantity: number) => void;
   clearCart: () => void;
+  refreshCart: () => void;
   cartTotal: number;
   itemCount: number;
 }
@@ -21,49 +30,78 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
+  const { user } = useAuth();
+  const [cartTotal, setCartTotal] = useState(0);
 
-  useEffect(() => {
-    const saved = localStorage.getItem('nutrabite-cart');
-    if (saved) {
-      try {
-        setItems(JSON.parse(saved));
-      } catch (e) {
-        console.error('Failed to parse cart');
-      }
+  const fetchCart = useCallback(async () => {
+    if (!user?.id) {
+      setItems([]);
+      setCartTotal(0);
+      return;
     }
-  }, []);
+    try {
+      const res = await fetch(`http://127.0.0.1:5000/api/cart/${user.id}`);
+      const data = await res.json();
+      if (data.success) {
+        setItems(data.items);
+        setCartTotal(data.total);
+      }
+    } catch(e) { console.error("Failed to fetch cart", e); }
+  }, [user]);
 
   useEffect(() => {
-    localStorage.setItem('nutrabite-cart', JSON.stringify(items));
-  }, [items]);
+    fetchCart();
+  }, [fetchCart]);
 
-  const addToCart = (item: FoodItem) => {
-    setItems(current => {
-      const existing = current.find(i => i.id === item.id);
-      if (existing) {
-        return current.map(i => i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i);
-      }
-      return [...current, { ...item, quantity: 1 }];
-    });
+  const addToCart = async (item: any) => {
+    if (!user?.id) return;
+    try {
+      await fetch(`http://127.0.0.1:5000/api/cart/${user.id}/add`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ menuItemId: item.id, quantity: 1 })
+      });
+      fetchCart();
+    } catch(e) {}
   };
 
-  const removeFromCart = (itemId: string) => {
-    setItems(current => current.filter(i => i.id !== itemId));
+  const removeFromCart = async (itemId: string) => {
+    if (!user?.id) return;
+    try {
+      await fetch(`http://127.0.0.1:5000/api/cart/${user.id}/update`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ menuItemId: itemId, quantity: 0 })
+      });
+      fetchCart();
+    } catch(e) {}
   };
 
-  const updateQuantity = (itemId: string, quantity: number) => {
-    if (quantity < 1) return removeFromCart(itemId);
-    setItems(current => current.map(i => i.id === itemId ? { ...i, quantity } : i));
+  const updateQuantity = async (itemId: string, quantity: number) => {
+    if (!user?.id) return;
+    try {
+      await fetch(`http://127.0.0.1:5000/api/cart/${user.id}/update`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ menuItemId: itemId, quantity })
+      });
+      fetchCart();
+    } catch(e) {}
   };
 
-  const clearCart = () => setItems([]);
+  const clearCart = async () => {
+    if (!user?.id) return;
+    try {
+      await fetch(`http://127.0.0.1:5000/api/cart/${user.id}/clear`, { method: 'POST' });
+      fetchCart();
+    } catch(e) {}
+  };
 
-  const cartTotal = items.reduce((total, item) => total + (item.price * item.quantity), 0);
   const itemCount = items.reduce((count, item) => count + item.quantity, 0);
 
   return (
     <CartContext.Provider value={{
-      items, addToCart, removeFromCart, updateQuantity, clearCart, cartTotal, itemCount
+      items, addToCart, removeFromCart, updateQuantity, clearCart, cartTotal, itemCount, refreshCart: fetchCart
     }}>
       {children}
     </CartContext.Provider>

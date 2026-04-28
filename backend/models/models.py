@@ -19,6 +19,18 @@ class User(db.Model):
     updatedAt = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     
     logs = db.relationship('LogEntry', backref='user', lazy=True)
+    cart = db.relationship('Cart', backref='user', uselist=False)
+    orders = db.relationship('Order', backref='user', lazy=True)
+    dailyStats = db.relationship('UserDailyStats', backref='user', lazy=True)
+
+class UserDailyStats(db.Model):
+    __tablename__ = 'UserDailyStats'
+    id = db.Column(db.String, primary_key=True, default=generate_cuid)
+    userId = db.Column(db.String, db.ForeignKey('User.id'), nullable=False)
+    date = db.Column(db.Date, nullable=False) # e.g. 2026-04-20
+    weight = db.Column(db.Float, nullable=True)
+    steps = db.Column(db.Integer, default=0)
+    workoutMins = db.Column(db.Integer, default=0)
 
 class Kitchen(db.Model):
     __tablename__ = 'Kitchen'
@@ -53,5 +65,43 @@ class LogEntry(db.Model):
     userId = db.Column(db.String, db.ForeignKey('User.id'), nullable=False)
     itemName = db.Column(db.String, nullable=False)
     calories = db.Column(db.Integer, nullable=False)
+    protein = db.Column(db.Integer, default=0, nullable=False)
+    carbs = db.Column(db.Integer, default=0, nullable=False)
+    fat = db.Column(db.Integer, default=0, nullable=False)
     priceInPaise = db.Column(db.Integer, nullable=False)
     loggedAt = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+class Cart(db.Model):
+    __tablename__ = 'Cart'
+    id = db.Column(db.String, primary_key=True, default=generate_cuid)
+    userId = db.Column(db.String, db.ForeignKey('User.id'), nullable=False, unique=True)
+    items = db.relationship('CartItem', backref='cart', lazy=True, cascade="all, delete-orphan")
+
+class CartItem(db.Model):
+    __tablename__ = 'CartItem'
+    id = db.Column(db.String, primary_key=True, default=generate_cuid)
+    cartId = db.Column(db.String, db.ForeignKey('Cart.id'), nullable=False)
+    menuItemId = db.Column(db.String, db.ForeignKey('MenuItem.id'), nullable=False)
+    quantity = db.Column(db.Integer, default=1, nullable=False)
+    
+    menuItem = db.relationship('MenuItem')
+
+class Order(db.Model):
+    __tablename__ = 'Order'
+    id = db.Column(db.String, primary_key=True, default=generate_cuid)
+    userId = db.Column(db.String, db.ForeignKey('User.id'), nullable=False)
+    status = db.Column(db.String, default='Pending', nullable=False)
+    totalInPaise = db.Column(db.Integer, nullable=False)
+    createdAt = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    
+    items = db.relationship('OrderItem', backref='order', lazy=True, cascade="all, delete-orphan")
+
+class OrderItem(db.Model):
+    __tablename__ = 'OrderItem'
+    id = db.Column(db.String, primary_key=True, default=generate_cuid)
+    orderId = db.Column(db.String, db.ForeignKey('Order.id'), nullable=False)
+    menuItemId = db.Column(db.String, db.ForeignKey('MenuItem.id'), nullable=False)
+    quantity = db.Column(db.Integer, nullable=False)
+    priceAtTimeInPaise = db.Column(db.Integer, nullable=False)
+    
+    menuItem = db.relationship('MenuItem')

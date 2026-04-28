@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 export interface User {
+  id?: string;
   name: string;
   email: string;
   phone: string;
@@ -11,7 +12,8 @@ export interface User {
 
 interface AuthContextType {
   user: User | null;
-  login: (userData: User) => void;
+  login: (email: string) => Promise<boolean>;
+  register: (userData: User) => Promise<boolean>;
   logout: () => void;
   isLoaded: boolean;
 }
@@ -34,9 +36,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoaded(true);
   }, []);
 
-  const login = (userData: User) => {
-    setUser(userData);
-    localStorage.setItem('nutrabite-user', JSON.stringify(userData));
+  const login = async (email: string) => {
+    try {
+      const res = await fetch('http://127.0.0.1:5000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setUser(data.user);
+        localStorage.setItem('nutrabite-user', JSON.stringify(data.user));
+        return true;
+      }
+      return false;
+    } catch (e) {
+      console.error(e);
+      return false;
+    }
+  };
+
+  const register = async (userData: User) => {
+    try {
+      const res = await fetch('http://127.0.0.1:5000/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData)
+      });
+      const data = await res.json();
+      if (data.success) {
+        setUser(data.user);
+        localStorage.setItem('nutrabite-user', JSON.stringify(data.user));
+        return true;
+      }
+      return false;
+    } catch (e) {
+      console.error(e);
+      return false;
+    }
   };
 
   const logout = () => {
@@ -45,7 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoaded }}>
+    <AuthContext.Provider value={{ user, login, register, logout, isLoaded }}>
       {children}
     </AuthContext.Provider>
   );
