@@ -4,6 +4,7 @@ import { useCart } from "@/lib/CartContext";
 import { useAuth } from "@/lib/AuthContext";
 import Image from "next/image";
 import Link from "next/link";
+import API from '@/lib/api';
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -16,6 +17,7 @@ export default function CartPage() {
   const [paymentStep, setPaymentStep] = useState<'idle' | 'processing' | 'qr' | 'success'>('idle');
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const handleCheckout = async () => {
     if (!user) {
@@ -25,41 +27,68 @@ export default function CartPage() {
     
     setIsCheckingOut(true);
     setPaymentStep('processing');
+    setErrorMsg(null);
     
     try {
       // 1. Process Checkout
-      const res = await fetch(`http://127.0.0.1:5000/api/checkout/${user.id}/process`, { method: 'POST' });
+      const res = await fetch(`${API}/api/checkout/${user.id}/process`, { method: 'POST' });
+      if (!res.ok) throw new Error(`Checkout failed (${res.status})`);
       const data = await res.json();
       
-      if (data.success) {
-        setOrderId(data.orderId);
-        // 2. Fetch QR Code
-        const qrRes = await fetch(`http://127.0.0.1:5000/api/checkout/${data.orderId}/qr`);
-        const qrData = await qrRes.json();
-        
-        if (qrData.success) {
-          setQrCode(qrData.qrCodeBase64);
-          setPaymentStep('qr');
-          refreshCart(); // clear frontend cart
-        }
-      }
-    } catch (e) {
-      console.error(e);
-      setIsCheckingOut(false);
+      if (!data.success || !data.orderId) throw new Error(data.message || 'Invalid checkout response');
+
+      setOrderId(data.orderId);
+      refreshCart(); // Cart is cleared on backend — sync frontend immediately
+
+      // 2. Fetch QR Code
+      const qrRes = await fetch(`${API}/api/checkout/${data.orderId}/qr`);
+      if (!qrRes.ok) throw new Error(`QR fetch failed (${qrRes.status})`);
+      const qrData = await qrRes.json();
+      
+      if (!qrData.success || !qrData.qrCodeBase64) throw new Error(qrData.message || 'QR generation failed');
+
+      setQrCode(qrData.qrCodeBase64);
+      setPaymentStep('qr');
+    } catch (e: unknown) {
+      console.error('CHECKOUT ERROR:', e);
+      const msg = e instanceof Error ? e.message : 'Could not connect to server. Is the backend running?';
+      setErrorMsg(msg);
       setPaymentStep('idle');
+    } finally {
+      setIsCheckingOut(false);
+    }
+  };
+
+  const handleRetryQr = async () => {
+    if (!orderId) return;
+    setIsCheckingOut(true);
+    setErrorMsg(null);
+    try {
+      const qrRes = await fetch(`${API}/api/checkout/${orderId}/qr`);
+      if (!qrRes.ok) throw new Error(`QR fetch failed (${qrRes.status})`);
+      const qrData = await qrRes.json();
+      if (!qrData.success || !qrData.qrCodeBase64) throw new Error(qrData.message || 'QR generation failed');
+      setQrCode(qrData.qrCodeBase64);
+      setPaymentStep('qr');
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Could not fetch QR code.';
+      setErrorMsg(msg);
+    } finally {
+      setIsCheckingOut(false);
     }
   };
 
   const handleSimulatePayment = async () => {
     if (!orderId) return;
     try {
-      const res = await fetch(`http://127.0.0.1:5000/api/checkout/${orderId}/confirm`, { method: 'POST' });
+      const res = await fetch(`${API}/api/checkout/${orderId}/confirm`, { method: 'POST' });
+      if (!res.ok) throw new Error('Payment confirmation failed');
       const data = await res.json();
       if (data.success) {
         setPaymentStep('success');
       }
     } catch(e) {
-      console.error(e);
+      console.error('PAYMENT ERROR:', e);
     }
   };
 
@@ -80,7 +109,7 @@ export default function CartPage() {
       <div className="container mx-auto px-4 py-24 flex flex-col items-center justify-center">
         <div className="text-6xl mb-6">🛒</div>
         <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-100 mb-4">Your cart is empty</h1>
-        <p className="text-neutral-500 dark:text-neutral-400 mb-8">Looks like you haven't added any healthy meals yet.</p>
+        <p className="text-neutral-500 dark:text-neutral-400 mb-8">Looks like you haven&apos;t added any healthy meals yet.</p>
         <Link 
           href="/menu" 
           className="px-8 py-3 bg-green-600 text-white font-bold rounded-full hover:bg-green-700 transition-colors"
@@ -110,7 +139,7 @@ export default function CartPage() {
           </button>
         </div>
       ) : paymentStep === 'success' ? (
-        <div className="max-w-md mx-auto py-12 text-center bg-white dark:bg-neutral-900 p-8 rounded-3xl border border-green-100 shadow-xl animate-in fade-in zoom-in duration-500">
+        <div className="max-w-md mx-auto py-12 text-center bg-white dark:bg-neutral-900 p-8 rounded-3xl border border-green-100 shadow-xl">
           <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-4xl mx-auto mb-6">
             ✓
           </div>
@@ -152,14 +181,14 @@ export default function CartPage() {
                   </div>
                   
                   <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-3 bg-neutral-100 p-1.5 rounded-xl">
+                    <div className="flex items-center gap-3 bg-neutral-100 dark:bg-neutral-800 p-1.5 rounded-xl">
                       <button 
                         onClick={() => updateQuantity(item.id, item.quantity - 1)}
                         className="w-8 h-8 flex items-center justify-center bg-white dark:bg-neutral-900 rounded-lg text-neutral-600 font-bold hover:bg-neutral-200 transition-colors shadow-sm"
                       >
                         -
                       </button>
-                      <span className="w-8 text-center font-bold text-neutral-900 dark:text-neutral-100">{item.quantity}</span>
+                      <span className="w-8 text-center font-bold text-neutral-900 dark:text-white">{item.quantity}</span>
                       <button 
                         onClick={() => updateQuantity(item.id, item.quantity + 1)}
                         className="w-8 h-8 flex items-center justify-center bg-white dark:bg-neutral-900 rounded-lg text-neutral-600 font-bold hover:bg-neutral-200 transition-colors shadow-sm"
@@ -198,11 +227,26 @@ export default function CartPage() {
                 </div>
               </div>
 
+              {errorMsg && (
+                <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm font-medium">
+                  <p>⚠️ {errorMsg}</p>
+                  {orderId && (
+                    <button
+                      onClick={handleRetryQr}
+                      disabled={isCheckingOut}
+                      className="mt-2 text-sm underline text-red-500 hover:text-red-700 disabled:opacity-50"
+                    >
+                      {isCheckingOut ? 'Retrying...' : 'Retry fetching QR code'}
+                    </button>
+                  )}
+                </div>
+              )}
+
               <button 
                 onClick={handleCheckout}
-                disabled={isCheckingOut}
+                disabled={isCheckingOut || !!orderId}
                 className={`w-full py-4 rounded-2xl font-bold text-white transition-all transform hover:scale-[1.02] shadow-xl ${
-                  isCheckingOut 
+                  isCheckingOut || !!orderId
                     ? 'bg-neutral-400 cursor-not-allowed' 
                     : 'bg-green-600 hover:bg-green-700 shadow-green-500/20'
                 }`}
@@ -210,7 +254,7 @@ export default function CartPage() {
                 {isCheckingOut ? (
                   <div className="flex items-center justify-center gap-2">
                     <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                    {paymentStep === 'processing' ? 'Processing...' : 'Verifying...'}
+                    {paymentStep === 'processing' ? 'Processing...' : 'Fetching QR...'}
                   </div>
                 ) : (
                   'Place Order - QR Pay'

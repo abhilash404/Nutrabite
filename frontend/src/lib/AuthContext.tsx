@@ -1,13 +1,14 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import API from './api';
 
 export interface User {
   id?: string;
   name: string;
   email: string;
   phone: string;
-  avatarUrl?: string; // Optional avatar URL
+  avatarUrl?: string;
 }
 
 interface AuthContextType {
@@ -27,18 +28,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const savedUser = localStorage.getItem('nutrabite-user');
     if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch (e) {
-        console.error('Failed to parse user session');
-      }
+      try { setUser(JSON.parse(savedUser)); } 
+      catch (e) { console.error('Failed to parse user session'); }
     }
     setIsLoaded(true);
   }, []);
 
   const login = async (email: string) => {
     try {
-      const res = await fetch('http://127.0.0.1:5000/api/auth/login', {
+      const res = await fetch(`${API}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })
@@ -50,15 +48,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return true;
       }
       return false;
-    } catch (e) {
-      console.error(e);
-      return false;
-    }
+    } catch (e) { console.error(e); return false; }
   };
 
   const register = async (userData: User) => {
     try {
-      const res = await fetch('http://127.0.0.1:5000/api/auth/register', {
+      const res = await fetch(`${API}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(userData)
@@ -70,10 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return true;
       }
       return false;
-    } catch (e) {
-      console.error(e);
-      return false;
-    }
+    } catch (e) { console.error(e); return false; }
   };
 
   const logout = () => {
@@ -90,8 +82,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (context === undefined) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 }

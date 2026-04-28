@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { useAuth } from './AuthContext';
+import API from './api';
 
 export interface CartItem {
   id: string;
@@ -34,29 +35,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [cartTotal, setCartTotal] = useState(0);
 
   const fetchCart = useCallback(async () => {
-    if (!user?.id) {
-      setItems([]);
-      setCartTotal(0);
-      return;
-    }
+    if (!user?.id) { setItems([]); setCartTotal(0); return; }
     try {
-      const res = await fetch(`http://127.0.0.1:5000/api/cart/${user.id}`);
+      const res = await fetch(`${API}/api/cart/${user.id}`);
       const data = await res.json();
-      if (data.success) {
-        setItems(data.items);
-        setCartTotal(data.total);
-      }
+      if (data.success) { setItems(data.items); setCartTotal(data.total); }
     } catch(e) { console.error("Failed to fetch cart", e); }
   }, [user]);
 
-  useEffect(() => {
-    fetchCart();
-  }, [fetchCart]);
+  useEffect(() => { fetchCart(); }, [fetchCart]);
 
   const addToCart = async (item: any) => {
     if (!user?.id) return;
     try {
-      await fetch(`http://127.0.0.1:5000/api/cart/${user.id}/add`, {
+      await fetch(`${API}/api/cart/${user.id}/add`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ menuItemId: item.id, quantity: 1 })
@@ -68,7 +60,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const removeFromCart = async (itemId: string) => {
     if (!user?.id) return;
     try {
-      await fetch(`http://127.0.0.1:5000/api/cart/${user.id}/update`, {
+      await fetch(`${API}/api/cart/${user.id}/update`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ menuItemId: itemId, quantity: 0 })
@@ -80,7 +72,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const updateQuantity = async (itemId: string, quantity: number) => {
     if (!user?.id) return;
     try {
-      await fetch(`http://127.0.0.1:5000/api/cart/${user.id}/update`, {
+      await fetch(`${API}/api/cart/${user.id}/update`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ menuItemId: itemId, quantity })
@@ -92,7 +84,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const clearCart = async () => {
     if (!user?.id) return;
     try {
-      await fetch(`http://127.0.0.1:5000/api/cart/${user.id}/clear`, { method: 'POST' });
+      await fetch(`${API}/api/cart/${user.id}/clear`, { method: 'POST' });
       fetchCart();
     } catch(e) {}
   };
@@ -110,8 +102,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
 export function useCart() {
   const context = useContext(CartContext);
-  if (context === undefined) {
-    throw new Error('useCart must be used within a CartProvider');
-  }
+  if (context === undefined) throw new Error('useCart must be used within a CartProvider');
   return context;
 }

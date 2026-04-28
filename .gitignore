@@ -80,3 +80,4 @@ coverage/
 backend/venv/bin/
 backend/venv/lib/
 backend/venv/lib64/
+.env.local

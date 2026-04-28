@@ -1,9 +1,11 @@
 import Link from 'next/link';
 
+const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:5000';
+
 export default async function KitchensPage() {
   let restaurants: any[] = [];
   try {
-    const res = await fetch('http://127.0.0.1:5000/api/kitchens', { cache: 'no-store' });
+    const res = await fetch(`${API}/api/kitchens`, { cache: 'no-store' });
     if (res.ok) restaurants = await res.json();
   } catch (e) {
     console.error("Failed to fetch kitchens", e);
@@ -41,7 +43,7 @@ export default async function KitchensPage() {
               </h2>
               
               <div className="flex flex-wrap gap-2 mb-4">
-                {restaurant.tags.map(tag => (
+                {restaurant.tags.map((tag:string) => (
                   <span 
                     key={tag} 
                     className="text-[10px] uppercase tracking-wider font-bold bg-neutral-100 text-neutral-600 px-2.5 py-1 rounded-md"

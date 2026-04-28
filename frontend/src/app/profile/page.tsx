@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
+import API from '@/lib/api';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell,
@@ -30,7 +31,6 @@ export default function ProfilePage() {
 
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-  
   const [graphData, setGraphData] = useState<any>(null);
 
   useEffect(() => {
@@ -41,13 +41,10 @@ export default function ProfilePage() {
     
     setProfile(p => ({...p, name: user.name}));
     
-    // Fetch stats
-    fetch(`http://127.0.0.1:5000/api/auth/${user.id}/stats`)
+    fetch(`${API}/api/auth/${user.id}/stats`)
       .then(res => res.json())
       .then(data => {
-        if(data.success) {
-          setGraphData(data);
-        }
+        if (data.success) setGraphData(data);
       })
       .catch(err => console.error("Failed to load stats", err));
       
@@ -85,16 +82,11 @@ export default function ProfilePage() {
     e.preventDefault();
     setIsSaving(true);
     setShowSuccess(false);
-
     await new Promise(resolve => setTimeout(resolve, 800));
-
     calculateStats(profile);
     setIsSaving(false);
     setShowSuccess(true);
-    
-    setTimeout(() => {
-      setShowSuccess(false);
-    }, 3000);
+    setTimeout(() => setShowSuccess(false), 3000);
   };
   
   const handleSignOut = () => {
@@ -117,7 +109,6 @@ export default function ProfilePage() {
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 mb-10">
-        {/* Form */}
         <div className="lg:col-span-2">
           <div className="bg-white dark:bg-neutral-900 p-8 rounded-3xl border border-neutral-100 dark:border-neutral-800 shadow-sm h-full">
             <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-6">Personal Details</h2>
@@ -194,24 +185,20 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Results Card */}
         <div className="lg:col-span-1 space-y-6">
           <div className="bg-gradient-to-br from-green-600 to-emerald-700 p-8 rounded-3xl text-white shadow-xl shadow-green-600/20 h-full flex flex-col justify-center">
             <h2 className="text-xl font-bold mb-6 opacity-90 underline decoration-green-300/30 underline-offset-8">Nutritional Insights</h2>
-            
             <div className="space-y-8">
               <div>
-                <p className="text-sm font-medium opacity-80 mb-1 caps tracking-wider uppercase">Your BMI Score</p>
+                <p className="text-sm font-medium opacity-80 mb-1 tracking-wider uppercase">Your BMI Score</p>
                 <div className="flex items-end gap-3">
                   <span className="text-5xl font-black">{stats.bmi}</span>
                   <span className="text-lg font-bold pb-1 text-green-200">{stats.status}</span>
                 </div>
               </div>
-
-              <div className="h-px bg-white dark:bg-neutral-900/20"></div>
-
+              <div className="h-px bg-white/20"></div>
               <div>
-                <p className="text-sm font-medium opacity-80 mb-1 caps tracking-wider uppercase">Suggested Daily Intake</p>
+                <p className="text-sm font-medium opacity-80 mb-1 tracking-wider uppercase">Suggested Daily Intake</p>
                 <div className="flex items-end gap-3">
                   <span className="text-5xl font-black">{stats.dailyCalories}</span>
                   <span className="text-lg font-bold pb-1 text-green-200">kcal / day</span>
@@ -222,11 +209,8 @@ export default function ProfilePage() {
         </div>
       </div>
       
-      {/* 4 GRAPHS SECTION */}
       {graphData && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          
-          {/* Graph 1: Calories */}
           <div className="bg-white dark:bg-neutral-900 p-6 rounded-3xl border border-neutral-100 dark:border-neutral-800 shadow-sm">
             <h3 className="text-lg font-bold mb-6 text-neutral-900 dark:text-neutral-100">Calories Consumed (7 Days)</h3>
             <ResponsiveContainer width="100%" height={250}>
@@ -241,7 +225,6 @@ export default function ProfilePage() {
             </ResponsiveContainer>
           </div>
 
-          {/* Graph 2: Macros */}
           <div className="bg-white dark:bg-neutral-900 p-6 rounded-3xl border border-neutral-100 dark:border-neutral-800 shadow-sm">
             <h3 className="text-lg font-bold mb-6 text-neutral-900 dark:text-neutral-100">Macro Breakdown (7 Days)</h3>
             <ResponsiveContainer width="100%" height={250}>
@@ -256,7 +239,6 @@ export default function ProfilePage() {
             </ResponsiveContainer>
           </div>
           
-          {/* Graph 3: Weight */}
           <div className="bg-white dark:bg-neutral-900 p-6 rounded-3xl border border-neutral-100 dark:border-neutral-800 shadow-sm">
             <h3 className="text-lg font-bold mb-6 text-neutral-900 dark:text-neutral-100">Weight Trend (7 Days)</h3>
             <ResponsiveContainer width="100%" height={250}>
@@ -270,7 +252,6 @@ export default function ProfilePage() {
             </ResponsiveContainer>
           </div>
 
-          {/* Graph 4: Activity */}
           <div className="bg-white dark:bg-neutral-900 p-6 rounded-3xl border border-neutral-100 dark:border-neutral-800 shadow-sm">
             <h3 className="text-lg font-bold mb-6 text-neutral-900 dark:text-neutral-100">Activity & Workouts</h3>
             <ResponsiveContainer width="100%" height={250}>
@@ -285,10 +266,8 @@ export default function ProfilePage() {
               </ComposedChart>
             </ResponsiveContainer>
           </div>
-          
         </div>
       )}
-
     </div>
   );
 }

@@ -5,8 +5,9 @@ import { useCart } from "@/lib/CartContext";
 import { useAuth } from "@/lib/AuthContext";
 import Image from "next/image";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, ShoppingBag, Info, Search } from "lucide-react";
+import { motion } from "framer-motion";
+import { Sparkles, ShoppingBag } from "lucide-react";
+import API from "@/lib/api";
 
 export default function MenuPage() {
   const { addToCart } = useCart();
@@ -17,7 +18,7 @@ export default function MenuPage() {
   const [aiRecommendation, setAiRecommendation] = useState<any>(null);
 
   useEffect(() => {
-    fetch('http://127.0.0.1:5000/api/menu')
+    fetch(`${API}/api/menu`)
       .then(res => res.json())
       .then(data => {
         setFoodItems(data);
@@ -116,7 +117,7 @@ export default function MenuPage() {
                       className="object-cover group-hover:scale-110 transition-transform duration-500" 
                     />
                     <div className="absolute top-3 left-3 flex gap-2">
-                      <span className={`px-2 py-1 text-xs font-bold rounded shadow-sm ₹{
+                      <span className={`px-2 py-1 text-xs font-bold rounded shadow-sm ${
                         item.type === 'Vegan' ? 'bg-green-100 text-green-700' : 
                         item.type === 'Veg' ? 'bg-emerald-100 text-emerald-700' : 
                         'bg-red-100 text-red-700'

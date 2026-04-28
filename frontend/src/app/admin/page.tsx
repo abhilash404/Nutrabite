@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import API from '@/lib/api';
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<'menu' | 'orders'>('menu');
   const [items, setItems] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch('http://127.0.0.1:5000/api/menu')
+    fetch(`${API}/api/menu`)
       .then(res => res.json())
       .then(data => setItems(data))
       .catch(err => console.error(err));
